@@ -1,17 +1,15 @@
 # Makefile
 
-# defaults
-SIM ?= icarus
-TOPLEVEL_LANG ?= verilog
+all: fibonacci galois
 
-GIT_ROOT = $(shell git rev-parse --show-toplevel)
-VERILOG_SOURCES += $(GIT_ROOT)/lfsr/rtl/lfsr_fibonacci.sv
+fibonacci:
+	@$(MAKE) -f Makefile.galois clean
+	@$(MAKE) -f Makefile.fibonacci
 
-# TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
-TOPLEVEL = lfsr_fibonacci
+galois:
+	@$(MAKE) -f Makefile.fibonacci clean
+	@$(MAKE) -f Makefile.galois
 
-# MODULE is the basename of the Python test file
-MODULE = lfsr_test
-
-# include cocotb's make rules to take care of the simulator setup
-include $(shell cocotb-config --makefiles)/Makefile.sim
+clean:
+	@$(MAKE) -f Makefile.fibonacci clean
+	@$(MAKE) -f Makefile.galois clean
