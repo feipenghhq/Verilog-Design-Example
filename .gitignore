@@ -2,3 +2,4 @@
 **/results.xml
 **/sim_build
 **/__pycache__
+**/*.vcd
