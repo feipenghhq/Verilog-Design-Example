@@ -49,6 +49,12 @@ def test_SerialLFSR_2():
     data = lfsr.next_n_value(1)
     print(hex(data))
 
+def test_SerialLFSR_3():
+    lfsr = SerialLFSR(5, 0x14, 0x1F)
+    data = lfsr.next_n_value(2)
+    print(hex(data))
+
 if __name__ == "__main__":
     test_SerialLFSR_1()
     test_SerialLFSR_2()
+    test_SerialLFSR_3()

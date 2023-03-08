@@ -72,7 +72,7 @@ There are some difference between to LFSR that defined in wikipedia:
 
 And the PCIe Spec:
 
-![image-20230305220523707](/home/feipenghhq/.config/Typora/typora-user-images/image-20230305220523707.png)
+![image-20230305220523707](./doc/assets/image-20230305220523707.png)
 
 (x^16+x^5+x^4+x^3+1)
 
@@ -81,7 +81,7 @@ Here are the differences:
 1. wikipedia shift right with MSb on the left and LSb on the right, while PCIe shift right with LSb on the left and MSb on the right.
 2. wikipedia start the bit from bit 1 to bit 16 while PCIe start the bit from bit 0 to bit 15. But they both tap on the bit indicated by the polynomial. For example, polynomial for PCIe is x^16+x^5+x^4+x^3+1 and it tap on bit 3, 4 and 5 even its bit is starting from bit 0 instead of bit 1
 
-### Algorithm to calculate parallel LFSR
+### Algorithm to calculate parallel LFSR (wikipedia format)
 
 Here is the algorithm to calculate parallel LFSR using the format defined in wikipedia, assume the polynomial we are using is 
 $$
@@ -193,7 +193,7 @@ Q^1 =
 $$
 
 
-Here we can deduct the matrix A to be like this. Assume that we have the following polynomial
+Here we can generalize the matrix A to be like this. Assume that we have the following polynomial
 $$
 x^n + c_{n-1}x^{n-1} + ... + c_2x^ 2 + c_1x^1 + 1.
 $$
@@ -217,16 +217,50 @@ Here the operation of `A * A` is similar to regular matrix multiplication but we
 
 So for the final result of A<sup>n</sup>, for each lines, if the 1 is set in corresponding position then that bit is part of the final xor equation.
 
-For example, in our previous example
+For the example above,, if we want to calculate LFSR after 3 cycle, here is the final transfer matrix.
 $$
-Q^5 = Q^0
+Q^3 = (Q^0)^3 =
+ \begin{pmatrix}
+  0 & 0 & 1 & 0 & 0\\
+  1 & 0 & 0 & 1 & 0 \\
+  0 & 0 & 1 & 0 & 1 \\
+  1 & 0 & 0 & 1 & 0 \\
+  0 & 1 & 0 & 0 & 1\\
+ \end{pmatrix}
 $$
-So we have the following equation
+And the XOR equation will be 
 
 ```verilog
-LFSR_next[0] = LFSR[];
-LFSR_next[1] = LFSR[];
-LFSR_next[2] = LFSR[];
-LFSR_next[3] = LFSR[];
+lfsr_next[4] = lfsr_current[2];
+lfsr_next[3] = lfsr_current[1];
+lfsr_next[2] = lfsr_current[2] ^ lfsr_current[0];
+lfsr_next[1] = lfsr_current[4] ^ lfsr_current[1];
+lfsr_next[0] = lfsr_current[3] ^ lfsr_current[0];
 ```
 
+
+
+### Algorithm to calculate parallel LFSR (PCIe format)
+
+Consider the following LFSR construction:
+
+![image-20230307201721506](/home/feipenghhq/.config/Typora/typora-user-images/image-20230307201721506.png)
+
+With this same LFSR structure and initial value, PCIe and wikipedia will have different polynomial and initial value.
+
+The figure denoted the bit position for both of the format.
+
+For wikipedia format, the initial value is 16'b1010_1100_1110_0001, the polynomial is 16'b1011_0100_0000_0000
+
+For PCIe format, the initial value is 16'b1000_0111_0011_0101, the polynomial is 16'b 1000_0000_0010_110
+
+If we observe the difference between the 2 we can find out that:
+
+1. The initial value of the wikipedia format is the reversed version (msb is reversed to lsb) of PCIe format.
+2. The polynomial value of the wikipedia format is also the reversed version (msb is reversed to lsb) of PCIe format, expect for the msb, since msb is always 1 here.
+
+With this finding, we can use the algorithm we defined in wikipedia format to calculate the parallel LFSR. We just need to transfer the polynomial and initial value from PCIe version to wikipedia version by reversing the bits using the algorithm we mentioned above.
+
+When we generate the XOR equation, we also need to reverse the bit position since it is reverse between the 2 format.
+
+ 
