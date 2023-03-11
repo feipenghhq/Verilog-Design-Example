@@ -53,11 +53,11 @@ The additional parity bit is the parity of the codeword.
 
 ## Decoding Hamming Code
 
-The decoder calculate the syndrome of the received hamming code. The calculation is very similar to calculating the parity bit, for each syndrome bit, we xor the same data bit position mentioned in step 5 in [General algorithm], and we also xor the parity bit itself. Assuming syndrome bit start from bit 1:
+The decoder calculate the syndrome of the received hamming code. The calculation is very similar to calculating the parity bit, for each syndrome bit, we xor the same data bit position mentioned in step 5 in [General algorithm], and we also xor the parity bit itself. **Note**: We assume the bit start at bit 1 for syndrome, parity and data:
 
-syndrome bit 1 = Parity bit 1 ^ d1 ^ d2 ^ d4 ...
+syndrome[1] = Parity[1] ^ d[1] ^ d[2] ^ d[4] ...
 
-syndrome bit 2 = Parity bit 2 ^ d1 ^ d3 ^ d4 ...
+syndrome[2] = Parity [2] ^ d[1] ^ d[3] ^ d[4] ...
 
 If the syndrome is zero, then there is no error. 
 
@@ -70,7 +70,7 @@ If we use SECDED, then the parity bit together tells us which case is value.
 
 1. syndrome == 0 then no error
 
-1. syndrome != 0 and parity != received parity, then 1 bit get flipped and syndrome represent the bit width
+1. syndrome != 0 and parity != received parity, then 1 bit get flipped and syndrome represent the bit
 2. syndrome != 0 and parity == received parity, then 2 bit get flipped.
 
 
