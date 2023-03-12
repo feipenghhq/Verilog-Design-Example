@@ -7,6 +7,7 @@ TOPLEVEL_LANG ?= verilog
 GIT_ROOT = $(shell git rev-parse --show-toplevel)
 VERILOG_SOURCES += $(GIT_ROOT)/ecc_hamming/rtl/ecc_hamming_encoder.sv
 VERILOG_SOURCES += $(GIT_ROOT)/ecc_hamming/rtl/ecc_hamming_74_encoder.sv
+VERILOG_SOURCES += $(GIT_ROOT)/ecc_hamming/rtl/ecc_hamming_decoder.sv
 VERILOG_SOURCES += $(GIT_ROOT)/ecc_hamming/rtl/ecc_hamming_74_decoder.sv
 VERILOG_SOURCES += $(GIT_ROOT)/ecc_hamming/tb/tb.sv
 

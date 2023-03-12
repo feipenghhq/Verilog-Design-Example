@@ -48,6 +48,11 @@ async def decoder(dut, data, flip1=False, flip1_pos=0, flip2=False, flip2_pos=0)
     dec_error_double_bit_74 = dut.dec_error_double_bit_74.value.integer
     syndrome_74 = dut.syndrome_74.value.integer
 
+    dec_dout = dut.dec_dout.value.integer
+    dec_error_single_bit = dut.dec_error_single_bit.value.integer
+    dec_error_double_bit = dut.dec_error_double_bit.value.integer
+    syndrome = dut.syndrome.value.integer
+
     # print out messages
     dut._log.info("---------------------------------------")
     dut._log.info(f"data = {hex(data)}, codeword = {hex(dut.codeword.value.integer)}")
@@ -59,6 +64,12 @@ async def decoder(dut, data, flip1=False, flip1_pos=0, flip2=False, flip2_pos=0)
         dut._log.info(f"flipped codeword: {hex(codeword)}")
 
     dut._log.info(f"decoded data = {hex(dec_dout_74)}, single flip: {dec_error_single_bit_74}, double flip: {dec_error_double_bit_74}, syndrome: {hex(syndrome_74)}")
+
+    # assertion to check 2 design match
+    assert dec_dout == dec_dout_74
+    assert dec_error_single_bit == dec_error_single_bit_74
+    assert dec_error_double_bit == dec_error_double_bit_74
+    assert syndrome == syndrome_74
 
     # assertion to check error
     if not flip1 and not flip2:
