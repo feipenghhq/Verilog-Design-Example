@@ -11,31 +11,43 @@ import cocotb
 from cocotb.triggers import Timer, RisingEdge, FallingEdge
 from cocotb.clock import Clock
 
-def Galois_LFSR(width, taps, initVal):
-    """ A Galois LFSR Generator. """
+def Galois_LFSR_6801(initVal, dire):
     lfsr_reg = initVal
-    while True:
+    while 1:
         yield lfsr_reg
+        if dire == "MSB":
+            msb = lfsr_reg & 0x8000
+            if msb:
+                lfsr_reg = ((lfsr_reg << 1) ^ (0x6801 >> 1)) & 0xffff
+            else:
+                lfsr_reg = (lfsr_reg << 1) | msb
+        if dire == "LSB":
+            lsb = lfsr_reg & 0x1
+            if lsb:
+                lfsr_reg = (lfsr_reg >> 1) ^ (0x6801 >> 1)
+            else:
+                lfsr_reg = (lfsr_reg >> 1) | (lsb << 15)
 
-        # log the lsb
-        lsb = lfsr_reg & 0x1
-        # the msb is also taken care here because of the xoring.
-        lfsr_reg >>= 1
-        if lsb:
-            lfsr_reg ^= taps
-
-@cocotb.test()
-async def test_galois_lfsr(dut):
-    """Try accessing the design."""
-    lfsr_model = Galois_LFSR(16, 0xB400, 0xACE1)
-
-    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
+async def setup(dut):
+    dut.load.value = 0
+    dut.shift_en.value = 1
+    dut.lfsr_in.value = 0
+    dut.din.value = 0
     dut.rst_b.value = 0
+    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
     await Timer(20, units="ns")
     dut.rst_b.value = 1
+
+async def tester(dut, dire, lfsr_out):
+    """Try accessing the design."""
+    lfsr_model = Galois_LFSR_6801(0xACE1, dire)
+    await setup(dut)
     for _ in range(10):
         expected = next(lfsr_model)
-        dut._log.info("LFSR output is %x. LFSR Model output is %x", dut.lfsr_out.value, expected)
-        assert dut.lfsr_out.value == expected, "Got wrong value. See the value above."
+        dut._log.info("LFSR output is %x. LFSR Model output is %x", lfsr_out.value, expected)
+        assert lfsr_out.value == expected, f"Got wrong value. See the value above."
         await FallingEdge(dut.clk)
-    dut._log.info("Test Passed!")
+
+@cocotb.test()
+async def test_lsb(dut):
+    await tester(dut, "LSB", dut.lfsr_out_lsb)
