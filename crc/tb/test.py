@@ -14,6 +14,13 @@ from cocotb.triggers import Timer, RisingEdge, FallingEdge
 from cocotb.clock import Clock
 
 from crc import Calculator, Configuration
+from random import randint
+
+########################################
+# Test functions
+########################################
+
+PRINT_INTO = False
 
 class Signals():
     def __init__(self, din, req, ready, valid, crc):
@@ -44,40 +51,116 @@ async def crc_gen(dut, data, signals):
     await RisingEdge(signals.valid)
     return signals.crc.value.integer
 
-async def test_crc_gen(dut, calc, last, signals, num_byte, first=0, print_info=False):
+async def test_crc_gen(dut, calc, signals, num_byte, first=00, last=0xff, iters=100):
     await setup(dut, signals)
-    for i in range(first, last):
-        checksum = calc.checksum(i.to_bytes(num_byte, byteorder='big'))
-        crc = await crc_gen(dut, i, signals)
+    for i in range(iters):
+        num = randint(first, last)
+        checksum = calc.checksum(num.to_bytes(num_byte, byteorder='big'))
+        crc = await crc_gen(dut, num, signals)
         await Timer(20, "ns")
-        if print_info:
-            dut._log.info(f"Data: {hex(i)}, Expected CRC: {hex(checksum)}, Actual CRC: {hex(crc)}")
-        assert (crc == checksum), dut._log.error(f"ERROR: Got wrong CRC result. Expected CRC: {hex(checksum)}, Actual CRC: {hex(crc)}")
+        if PRINT_INTO:
+            dut._log.info(f"Data: {hex(num)}, Expected CRC: {hex(checksum)}, Actual CRC: {hex(crc)}")
+        assert (crc == checksum), dut._log.error(f"ERROR: Got wrong CRC result. Data: {hex(num)}, Expected CRC: {hex(checksum)}, Actual CRC: {hex(crc)}")
+
+########################################
+# Test 8 bit crc module
+########################################
+
+cfg8 = Configuration(
+    width=8,
+    polynomial=0x9b,
+    init_value=0xFF,
+    final_xor_value=0x00,
+    reverse_input=False,
+    reverse_output=False,
+)
 
 @cocotb.test()
 async def test_crc_gen_8(dut):
-    cfg = Configuration(
-        width=8,
-        polynomial=0x9b,
-        init_value=0xFF,
-        final_xor_value=0x00,
-        reverse_input=False,
-        reverse_output=False,
-    )
-    calc = Calculator(cfg)
+    """ 8 bit crc with 8 bit data"""
+    calc = Calculator(cfg8)
     signals = Signals(dut.din_8, dut.req_8, dut.ready_8, dut.valid_8, dut.crc_8)
-    await test_crc_gen(dut, calc, 0xff, signals, 1)
+    await test_crc_gen(dut, calc, signals, 1, 0x0, 0x0)
+
+@cocotb.test()
+async def test_crc_gen_8_16bit(dut):
+    """ 8 bit crc with 16 bit data"""
+    calc = Calculator(cfg8)
+    signals = Signals(dut.din_8a, dut.req_8a, dut.ready_8a, dut.valid_8a, dut.crc_8a)
+    await test_crc_gen(dut, calc, signals, 2, 0x0000, 0xffff)
+
+########################################
+# Test 16 bit crc module
+########################################
+
+cfg16 = Configuration(
+    width=16,
+    polynomial=0x1021,
+    init_value=0xFFFF,
+    final_xor_value=0x0000,
+    reverse_input=False,
+    reverse_output=False,
+)
 
 @cocotb.test()
 async def test_crc_gen_16(dut):
-    cfg = Configuration(
-        width=16,
-        polynomial=0x1021,
-        init_value=0xFFFF,
-        final_xor_value=0x0000,
-        reverse_input=False,
-        reverse_output=False,
-    )
-    calc = Calculator(cfg)
+    """ 16 bit crc with 16 bit data"""
+    calc = Calculator(cfg16)
     signals = Signals(dut.din_16, dut.req_16, dut.ready_16, dut.valid_16, dut.crc_16)
-    await test_crc_gen(dut, calc, 0x1ff, signals, 2)
+    await test_crc_gen(dut, calc, signals, 2, 0x0000, 0xffff)
+
+
+@cocotb.test()
+async def test_crc_gen_16_8bit(dut):
+    """ 16 bit crc with 8 bit data"""
+    calc = Calculator(cfg16)
+    signals = Signals(dut.din_16a, dut.req_16a, dut.ready_16a, dut.valid_16a, dut.crc_16a)
+    await test_crc_gen(dut, calc, signals, 1)
+
+@cocotb.test()
+async def test_crc_gen_16_32bit(dut):
+    """ 16 bit crc with 32 bit data"""
+    calc = Calculator(cfg16)
+    signals = Signals(dut.din_16b, dut.req_16b, dut.ready_16b, dut.valid_16b, dut.crc_16b)
+    await test_crc_gen(dut, calc, signals, 4, 0x00000000, 0xffffffff)
+
+########################################
+# Test 32 bit crc module
+########################################
+
+cfg32 = Configuration(
+    width=32,
+    polynomial=0x04C11DB7,
+    init_value=0xFFFFFFFF,
+    final_xor_value=0x00000000,
+    reverse_input=False,
+    reverse_output=False,
+)
+
+@cocotb.test()
+async def test_crc_gen_32(dut):
+    """ 32 bit crc with 32 bit data"""
+    calc = Calculator(cfg32)
+    signals = Signals(dut.din_32, dut.req_32, dut.ready_32, dut.valid_32, dut.crc_32)
+    await test_crc_gen(dut, calc, signals, 4, 0x0, 0xffffffff)
+
+@cocotb.test()
+async def test_crc_gen_32_8bit(dut):
+    """ 32 bit crc with 8 bit data"""
+    calc = Calculator(cfg32)
+    signals = Signals(dut.din_32a, dut.req_32a, dut.ready_32a, dut.valid_32a, dut.crc_32a)
+    await test_crc_gen(dut, calc, signals, 1, 0x0, 0xff)
+
+@cocotb.test()
+async def test_crc_gen_32_16bit(dut):
+    """ 32 bit crc with 16 bit data"""
+    calc = Calculator(cfg32)
+    signals = Signals(dut.din_32b, dut.req_32b, dut.ready_32a, dut.valid_32b, dut.crc_32b)
+    await test_crc_gen(dut, calc, signals, 2, 0x0, 0xffff)
+
+@cocotb.test()
+async def test_crc_gen_32_64bit(dut):
+    """ 32 bit crc with 64 bit data"""
+    calc = Calculator(cfg32)
+    signals = Signals(dut.din_32c, dut.req_32c, dut.ready_32c, dut.valid_32c, dut.crc_32c)
+    await test_crc_gen(dut, calc, signals, 8, 0x0, 0xffffffff)

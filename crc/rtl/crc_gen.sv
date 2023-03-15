@@ -5,15 +5,28 @@
 // Date Created: 03/12/2023
 // ------------------------------------------------------------------------------------------------
 // Serial CRC generator
-// ------------------------------------------------------------------------------------------------
 // Read doc/crc.md to understand the algorithm to calculate the CRC.
 // ------------------------------------------------------------------------------------------------
 
-// This is a serial crc generator, the data bit will be shifted into the generator bit by bit.
-// The original data will be shifted out first, and after the CRC calculation is done,
-// the crc bits will be shifted out following the last bit of the data.
+/*
 
-// This implementation assumes that shift start from MSB first.
+The CRC generation used Galois LFSR.
+Here is an example using the following CRC polynomial
+CRC-8: x^8 + x^2 + x + 1
+Poly: 0x07
+Galois LFSR used to calculate the CRC:
+
+                            shift direction
+                            <--------------
+
+      +---+---+---+---+---+---+      +---+      +---+             +------+
+      | 8 | 7 | 6 | 5 | 4 | 3 |<-(+)-| 2 |<-(+)-| 1 |<----(+)<----| data |
+      +---+---+---+---+---+---+   |  +---+   |  +---+      |      +------+
+        |                         |          |             |
+        |                         |          |             |
+        +-------------------------+----------+------------->
+
+*/
 
 module crc_gen #(
     parameter DW = 8,           // data width, data width
@@ -25,7 +38,7 @@ module crc_gen #(
     input  logic            clk,
     input  logic            rst_b,
 
-    input  logic [DW-1:0]   din,   // data for crc calculation
+    input  logic [DW-1:0]   din,    // data for crc calculation
     input  logic            req,    // request to generate crc
 
     output logic            ready,  // generator is ready to take new data
@@ -33,17 +46,16 @@ module crc_gen #(
     output logic [PW-1:0]   crc     // generated crc
 );
 
-    parameter CNT_WIDTH = $clog2(DW);
+    localparam CNT_WIDTH = $clog2(DW);
+    localparam REM_WIDTH = (DW > PW) ? (DW - PW) : 1;   // remaining data width
 
     logic                   take_req;   // take the new request
     logic                   calc_done;  // calculation done
+    logic                   lfsr_en;
+    logic [PW-1:0]          lfsr_in;
+    logic [REM_WIDTH-1:0]   data_remaining;
 
-    logic [PW-1:0]          lfsr_next;
-
-    logic [DW-1:0]          data;
-    logic [PW-1:0]          lfsr;
-    logic [CNT_WIDTH:0]     counter;        // counter to count on the number of bits calculated
-
+    logic [CNT_WIDTH:0]     counter;    // counter to count on the number of bits calculated
 
     /////////////////////////////////
     // flow control
@@ -52,6 +64,7 @@ module crc_gen #(
     assign take_req = req & ready;
     assign calc_done = counter == 0;
     assign valid = calc_done & ~ready;
+    assign lfsr_en = take_req | ~calc_done;
 
     always @(posedge clk or negedge rst_b) begin
         if (!rst_b) begin
@@ -70,17 +83,14 @@ module crc_gen #(
     always @(posedge clk) begin
         if (!rst_b) begin
             counter <= 0;
-            data <= 0;
         end
         else begin
             if (take_req) begin
                 counter <= DW;
-                data <= din;
             end
             // only do this when generator is running
             else if (!ready) begin
                 counter <= counter - 1'b1;
-                data <= data << 1;
             end
         end
     end
@@ -89,31 +99,53 @@ module crc_gen #(
     // LFSR to calculate crc
     /////////////////////////////////
 
-    always @(posedge clk or negedge rst_b) begin
-        if (!rst_b) begin
-            lfsr <= INIT;
-        end
-        else if (take_req) begin
-            lfsr <= INIT;
-        end
-        else if (!ready) begin
-            lfsr <= lfsr_next;
-        end
-    end
+    // take care of the input data
 
-    always @(*) begin
-        // shift towards MSB
-        lfsr_next[0] = lfsr[PW-1] ^ data[DW-1];
-        for (int i = 1; i < PW; i = i + 1) begin
-            if (POLY[i] == 1) begin
-                lfsr_next[i] = lfsr[i-1] ^ lfsr_next[0];
-            end
-            else begin
-                lfsr_next[i] = lfsr[i-1];
-            end
-        end
-    end
+    generate
+        if (DW > PW) begin
 
-    assign crc = lfsr;
+            assign lfsr_in = din[DW-1:DW-PW] ^ INIT;
+
+            always @(posedge clk or rst_b) begin
+                if (!rst_b) begin
+                    data_remaining <= 0;
+                end
+                else begin
+                    if (take_req) begin
+                        data_remaining <=  din[DW-PW-1:0];
+                    end
+                    else if (!ready) begin
+                        data_remaining <= data_remaining << 1;
+                    end
+                end
+            end
+
+        end
+        else if (DW == PW) begin
+            assign lfsr_in = din ^ INIT;
+            assign data_remaining = 1'b0;
+        end
+        else if (DW < PW) begin
+            assign lfsr_in = {din, {(PW-DW){1'b0}}} ^ INIT;
+            assign data_remaining = 1'b0;
+        end
+    endgenerate
+
+    // instantiate the LFSR module
+    lfsr_galois #(
+        .DIR("MSB"),
+        .WIDTH(PW),
+        .POLY(POLY),
+        .INIT(INIT)
+    )
+    u_lfsr_galois (
+        .clk(clk),
+        .rst_b(rst_b),
+        .load(take_req),
+        .shift_en(lfsr_en),
+        .lfsr_in(lfsr_in),
+        .din(data_remaining[REM_WIDTH-1]),
+        .lfsr_out(crc)
+    );
 
 endmodule

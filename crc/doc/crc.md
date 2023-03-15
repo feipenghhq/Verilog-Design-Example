@@ -32,11 +32,11 @@ https://en.wikipedia.org/wiki/Computation_of_cyclic_redundancy_checks
 
 ### CRC generation
 
-FIXME:
+This is the algorithm used in my design
 
-- The CRC initial value is attached to the end of the input data to form the data to be divided: `data_crc = {data, crc}`
+- The incoming data is XOR-ed with the initial values of the polynomial. If the data length is larger then the polynomial, then the   upper bits are XOR-ed with the initial values of the polynomials. 
 
-- `data_crc` is loaded into the LFSR as the initial value. The rest of the data that are not loaded into the LFSR will be the remaining bit that get shifted into the LFSR each clock cycle.
+- Then the data is loaded into the LFSR as the initial value. The rest of the data that are not loaded into the LFSR will be shifted into the LFSR each clock cycle.
 
 - If term x^n is part of the polynomial, then the output of the corresponding flop is XOR-ed with the MSB before going into next level. If the term is not part of the polynomial then the output of the corresponding flop is going to the next level directly without XOR.
 - When the last bit is shifted into the LFSR, then the calculation is done and the bit in LFSR register is the CRC value of the data.
