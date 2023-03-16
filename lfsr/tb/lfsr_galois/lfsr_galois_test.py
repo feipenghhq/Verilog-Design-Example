@@ -18,7 +18,7 @@ def Galois_LFSR_6801(initVal, dire):
         if dire == "MSB":
             msb = lfsr_reg & 0x8000
             if msb:
-                lfsr_reg = ((lfsr_reg << 1) ^ (0x6801 >> 1)) & 0xffff
+                lfsr_reg = ((lfsr_reg << 1) ^ 0x6801) & 0xffff
             else:
                 lfsr_reg = (lfsr_reg << 1) | msb
         if dire == "LSB":
@@ -50,4 +50,4 @@ async def tester(dut, dire, lfsr_out):
 
 @cocotb.test()
 async def test_lsb(dut):
-    await tester(dut, "LSB", dut.lfsr_out_lsb)
+    await tester(dut, "MSB", dut.lfsr_out_lsb)

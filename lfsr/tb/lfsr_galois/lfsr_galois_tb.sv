@@ -19,7 +19,7 @@ module tb();
     logic                din;
     logic [WIDTH-1:0]    lfsr_out_lsb;
 
-    lfsr_galois #(.DIR("LSB"))
+    lfsr_galois #(.DIR("MSB"))
     u_lfsr_fibonacci(
         .lfsr_out(lfsr_out_lsb),
         .*
