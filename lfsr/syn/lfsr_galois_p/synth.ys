@@ -1,6 +1,6 @@
 # read design
-read -sv ../../rtl/lfsr_galois_parallel.sv
-hierarchy -top lfsr_galois_parallel
+read -sv ../../rtl/lfsr_galois_p.sv
+hierarchy -top lfsr_galois_p
 
 # the high-level stuff
 proc; fsm; opt; memory; opt
@@ -18,7 +18,7 @@ abc -liberty ../../../common/lib/vsclib013.lib
 clean
 
 # write the verilog file
-write_verilog lfsr_galois_parallel_synth.v
+write_verilog lfsr_galois_p_synth.v
 
 stat
 

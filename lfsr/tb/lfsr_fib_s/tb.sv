@@ -4,7 +4,7 @@
 // Author: Heqing Huang
 // Date Created: 03/14/2023
 // ------------------------------------------------------------------------------------------------
-// Test bench for lfsr_fibonacci
+// Test bench for lfsr_fib
 // ------------------------------------------------------------------------------------------------
 
 module tb();
@@ -19,8 +19,8 @@ module tb();
     logic                din;
     logic [WIDTH-1:0]    lfsr_out_msb;
 
-    lfsr_fibonacci #(.DIR("MSB"))
-    u_lfsr_fibonacci(
+    lfsr_fib_s #(.DIR("MSB"))
+    u_lfsr_fib_s(
         .lfsr_out(lfsr_out_msb),
         .*
         );

@@ -5,14 +5,15 @@ SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 
 GIT_ROOT = $(shell git rev-parse --show-toplevel)
-VERILOG_SOURCES += $(GIT_ROOT)/lfsr/rtl/lfsr_galois.sv
-VERILOG_SOURCES += $(GIT_ROOT)/lfsr/tb/lfsr_galois/lfsr_galois_tb.sv
+VERILOG_SOURCES += $(GIT_ROOT)/lfsr/rtl/lfsr_galois_p.sv
+VERILOG_SOURCES += $(GIT_ROOT)/lfsr/rtl/lfsr_0x6801_W16_D0.sv
+VERILOG_SOURCES += $(GIT_ROOT)/lfsr/tb/lfsr_galois_p/tb.sv
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
 TOPLEVEL = tb
 
 # MODULE is the basename of the Python test file
-MODULE = lfsr_galois_test
+MODULE = test
 
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim

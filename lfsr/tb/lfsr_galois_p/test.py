@@ -49,5 +49,9 @@ async def tester(dut, dire, lfsr_out):
 
 
 @cocotb.test()
-async def test_lsb(dut):
-    await tester(dut, "MSB", dut.lfsr_out)
+async def test_msb1(dut):
+    await tester(dut, "MSB", dut.lfsr_outa)
+
+@cocotb.test()
+async def test_msb2(dut):
+    await tester(dut, "MSB", dut.lfsr_outb)
