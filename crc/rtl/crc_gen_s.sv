@@ -9,8 +9,9 @@
 // ------------------------------------------------------------------------------------------------
 
 /*
-
-The CRC generation used Galois LFSR.
+------------------------------------------------------------------------------------------------
+CRC generation used Galois LFSR structure
+------------------------------------------------------------------------------------------------
 Here is an example using the following CRC polynomial
 CRC-8: x^8 + x^2 + x + 1
 Poly: 0x07
@@ -18,7 +19,6 @@ Galois LFSR used to calculate the CRC:
 
                             shift direction
                             <--------------
-
       +---+---+---+---+---+---+      +---+      +---+             +------+
       | 8 | 7 | 6 | 5 | 4 | 3 |<-(+)-| 2 |<-(+)-| 1 |<----(+)<----| data |
       +---+---+---+---+---+---+   |  +---+   |  +---+      |      +------+
@@ -28,12 +28,12 @@ Galois LFSR used to calculate the CRC:
 
 */
 
-module crc_gen #(
+module crc_gen_s #(
     parameter DW = 8,           // data width, data width
-    parameter PW = 8,           // polynomial width
+    parameter CW = 8,           // crc width
     parameter POLY = 8'h07,     // polynomial represented using normal form.
                                 // default is CRC8-CCITT, 8'h01 => x^8 + x^2 + x + 1
-    parameter [PW-1:0] INIT = 0 // initial value for the internal LFSR
+    parameter [CW-1:0] INIT = 0 // initial value for the internal LFSR
 ) (
     input  logic            clk,
     input  logic            rst_b,
@@ -43,16 +43,16 @@ module crc_gen #(
 
     output logic            ready,  // generator is ready to take new data
     output logic            valid,  // crc generation is done.
-    output logic [PW-1:0]   crc     // generated crc
+    output logic [CW-1:0]   crc     // generated crc
 );
 
     localparam CNT_WIDTH = $clog2(DW);
-    localparam REM_WIDTH = (DW > PW) ? (DW - PW) : 1;   // remaining data width
+    localparam REM_WIDTH = (DW > CW) ? (DW - CW) : 1;   // remaining data width
 
     logic                   take_req;   // take the new request
     logic                   calc_done;  // calculation done
     logic                   lfsr_en;
-    logic [PW-1:0]          lfsr_in;
+    logic [CW-1:0]          lfsr_in;
     logic [REM_WIDTH-1:0]   data_remaining;
 
     logic [CNT_WIDTH:0]     counter;    // counter to count on the number of bits calculated
@@ -99,12 +99,12 @@ module crc_gen #(
     // LFSR to calculate crc
     /////////////////////////////////
 
-    // take care of the input data
-
+    // Taking care of the input data
+    // Based on our Galois LFSR structure, the LFSR initial value should be din[upper CW width] ^ crc_in
     generate
-        if (DW > PW) begin
+        if (DW > CW) begin
 
-            assign lfsr_in = din[DW-1:DW-PW] ^ INIT;
+            assign lfsr_in = din[DW-1:DW-CW] ^ INIT;
 
             always @(posedge clk or rst_b) begin
                 if (!rst_b) begin
@@ -112,7 +112,7 @@ module crc_gen #(
                 end
                 else begin
                     if (take_req) begin
-                        data_remaining <=  din[DW-PW-1:0];
+                        data_remaining <=  din[DW-CW-1:0];
                     end
                     else if (!ready) begin
                         data_remaining <= data_remaining << 1;
@@ -121,24 +121,24 @@ module crc_gen #(
             end
 
         end
-        else if (DW == PW) begin
+        else if (DW == CW) begin
             assign lfsr_in = din ^ INIT;
             assign data_remaining = 1'b0;
         end
-        else if (DW < PW) begin
-            assign lfsr_in = {din, {(PW-DW){1'b0}}} ^ INIT;
+        else if (DW < CW) begin
+            assign lfsr_in = {din, {(CW-DW){1'b0}}} ^ INIT;
             assign data_remaining = 1'b0;
         end
     endgenerate
 
     // instantiate the LFSR module
-    lfsr_galois #(
+    lfsr_galois_s #(
         .DIR("MSB"),
-        .WIDTH(PW),
+        .WIDTH(CW),
         .POLY(POLY),
         .INIT(INIT)
     )
-    u_lfsr_galois (
+    u_lfsr_galois_s (
         .clk(clk),
         .rst_b(rst_b),
         .load(take_req),
