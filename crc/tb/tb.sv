@@ -279,7 +279,11 @@ module tb();
         .crc(crc_32c)
     );
 
-
-
+    //`ifdef COCOTB_SIM
+    //    initial begin
+    //        $dumpfile("dump.vcd");
+    //        $dumpvars(0, u_crc8a);
+    //    end
+    //`endif
 
 endmodule

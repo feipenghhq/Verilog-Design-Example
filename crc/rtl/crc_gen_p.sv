@@ -14,15 +14,28 @@ Example Galois LFSR used to calculate the CRC:
 ------------------------------------------------------------------------------------------------
 CRC-8: x^8 + x^2 + x + 1
 Poly: 0x07
+
+Algorithm #1:
                             shift direction
                             <--------------
-
       +---+---+---+---+---+---+      +---+      +---+             +------+
       | 8 | 7 | 6 | 5 | 4 | 3 |<-(+)-| 2 |<-(+)-| 1 |<----(+)<----| data |
       +---+---+---+---+---+---+   |  +---+   |  +---+      |      +------+
         |                         |          |             |
         |                         |          |             |
         +-------------------------+----------+------------->
+
+Algorithm #2:
+                            shift direction
+                            <--------------
+                                                                  +------+
+        >------------------------------------------------>(+)<----| data |
+        |                                                  |      +------+
+        |                         +----------+-------------|
+        |                         |          |             |
+      +---+---+---+---+---+---+   |  +---+   |  +---+      |
+      | 8 | 7 | 6 | 5 | 4 | 3 |<-(+)-| 2 |<-(+)-| 1 |<-----+
+      +---+---+---+---+---+---+      +---+      +---+
 
 ------------------------------------------------------------------------------------------------
 Cascading CRC calculation:
@@ -43,6 +56,9 @@ In the first cycle, din = D0, crc_in = initial value of the polynomial, and we g
 In the second cycle, din = D1, crc_in = crc_out_1, and we get a crc output as crc_out_2.
 In the third cycle, din = D2, crc_in = crc_out_2, and we get a crc output as crc_out_3.
 In the fourth cycle, din = D3, crc_in = crc_out_3, and we get a crc output as the final crc value.
+
+
+
 */
 
 module crc_gen_p #(
@@ -56,12 +72,16 @@ module crc_gen_p #(
     output logic [CW-1:0]   crc_out // generated crc
 );
 
-    logic [CW-1:0] lfsr_init;
-    logic [DW-1:0] data_remaining;
+    localparam ALGORITHM = 1;
 
-    // Based on our Galois LFSR structure, the LFSR initial value should be din[upper CW width] ^ crc_in
-    // which is the same as serial CRC calculation in crc_gen.sv
     generate
+    if (ALGORITHM == 1) begin:algorithm_1
+
+        logic [CW-1:0] lfsr_init;
+        logic [DW-1:0] data_remaining;
+
+        // Based on our Galois LFSR structure, the LFSR initial value should be din[upper CW width] ^ crc_in
+        // which is the same as serial CRC calculation in crc_gen.sv
         if (DW == CW) begin
             assign lfsr_init = din ^ crc_in;
             assign data_remaining = 0;
@@ -75,19 +95,48 @@ module crc_gen_p #(
             assign lfsr_init = din[DW-1:DW-CW] ^ crc_in;
             assign data_remaining = {din[DW-CW-1:0], {(DW-CW){1'b0}}};
         end
-    endgenerate
 
-    // Use a parallel Galois LFSR
-    lfsr_galois_p #(
-        .D_WIDTH(DW),
-        .WIDTH(CW),
-        .DIR("MSB"),
-        .POLY(POLY)
-    )
-    u_lfsr_galois_p(
-        .lfsr_in(lfsr_init),
-        .data(data_remaining),
-        .lfsr_out(crc_out)
-    );
+        // Use a parallel Galois LFSR
+        lfsr_galois_p #(
+            .D_WIDTH(DW),
+            .WIDTH(CW),
+            .DIR("MSB"),
+            .POLY(POLY)
+        )
+        u_lfsr_galois_p(
+            .lfsr_in(lfsr_init),
+            .data(data_remaining),
+            .lfsr_out(crc_out)
+        );
+
+    end: algorithm_1
+
+    if (ALGORITHM == 2) begin
+
+        // Big array to capture the LFSR value for each iteration
+        // Only this style works with Yosys
+        logic [CW-1:0] crc_state[DW:0];
+
+        // iteration to calculate the LFSR after DW cycle
+        genvar i;
+        assign crc_state[0] = crc_in;
+        for (i = 1; i <= DW; i = i + 1) begin
+            assign crc_state[i] = next_crc(crc_state[i-1], din[DW-i]);
+        end
+
+        assign crc_out = crc_state[DW];
+
+        // Function used to calculte the next lfsr value.
+        // Same algorithm used in lfsr_galois
+        function automatic [CW-1:0] next_crc;
+            input [CW-1:0]  crc_input;
+            input           data_input;
+            logic           xor_bit;
+            xor_bit = data_input ^ crc_input[CW-1];
+            next_crc = (crc_input << 1) ^ (POLY & {CW{xor_bit}});
+        endfunction
+
+    end
+    endgenerate
 
 endmodule

@@ -130,7 +130,7 @@ cfg16 = Configuration(
     reverse_output=False,
 )
 
-#@cocotb.test()
+@cocotb.test()
 async def test_crc_gen_16(dut):
     """ 16 bit crc with 16 bit data"""
     calc = Calculator(cfg16)
@@ -138,14 +138,14 @@ async def test_crc_gen_16(dut):
     await crc_gen_s_tester(dut, calc, signals, 2, 0x0000, 0xffff)
 
 
-#@cocotb.test()
+@cocotb.test()
 async def test_crc_gen_16_8bit(dut):
     """ 16 bit crc with 8 bit data"""
     calc = Calculator(cfg16)
     signals = Signals(dut.din_16a, dut.req_16a, dut.ready_16a, dut.valid_16a, dut.crc_16a)
     await crc_gen_s_tester(dut, calc, signals, 1)
 
-#@cocotb.test()
+@cocotb.test()
 async def test_crc_gen_16_32bit(dut):
     """ 16 bit crc with 32 bit data"""
     calc = Calculator(cfg16)
@@ -165,28 +165,28 @@ cfg32 = Configuration(
     reverse_output=False,
 )
 
-#@cocotb.test()
+@cocotb.test()
 async def test_crc_gen_32(dut):
     """ 32 bit crc with 32 bit data"""
     calc = Calculator(cfg32)
     signals = Signals(dut.din_32, dut.req_32, dut.ready_32, dut.valid_32, dut.crc_32)
     await crc_gen_s_tester(dut, calc, signals, 4, 0x0, 0xffffffff)
 
-#@cocotb.test()
+@cocotb.test()
 async def test_crc_gen_32_8bit(dut):
     """ 32 bit crc with 8 bit data"""
     calc = Calculator(cfg32)
     signals = Signals(dut.din_32a, dut.req_32a, dut.ready_32a, dut.valid_32a, dut.crc_32a)
     await crc_gen_s_tester(dut, calc, signals, 1, 0x0, 0xff)
 
-#@cocotb.test()
+@cocotb.test()
 async def test_crc_gen_32_16bit(dut):
     """ 32 bit crc with 16 bit data"""
     calc = Calculator(cfg32)
     signals = Signals(dut.din_32b, dut.req_32b, dut.ready_32a, dut.valid_32b, dut.crc_32b)
     await crc_gen_s_tester(dut, calc, signals, 2, 0x0, 0xffff)
 
-#@cocotb.test()
+@cocotb.test()
 async def test_crc_gen_32_64bit(dut):
     """ 32 bit crc with 64 bit data"""
     calc = Calculator(cfg32)
