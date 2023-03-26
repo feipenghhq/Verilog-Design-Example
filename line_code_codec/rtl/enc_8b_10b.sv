@@ -38,10 +38,29 @@ encoded into 4 bits named j, h, g, f. The 5-bit block is encoded into 6 bits nam
 the 4-bit and 6-bit blocks are then combined into a 10-bit encoded value.
 
 --------------------------------------------------------
+Running disparity:
+--------------------------------------------------------
+From: <https://en.wikipedia.org/wiki/8b/10b_encoding#Running_disparity>
+
+For each 5b/6b and 3b/4b code with an unequal number of ones and zeros, there are two bit patterns that can be used to
+transmit it: one with two more "1" bits, and one with all bits inverted and thus two more zeros. Depending on the
+current running disparity of the signal, the encoding engine selects which of the two possible six- or four-bit
+sequences to send for the given data. Obviously, if the six-bit or four-bit code has equal numbers of ones and zeros,
+there is no choice to make, as the disparity would be unchanged, with the exceptions of sub-blocks D.07 (00111)
+and D.x.3 (011). In either case the disparity is still unchanged, but if RD is positive when D.07 is encountered 000111
+is used, and if it is negative 111000 is used. Likewise, if RD is positive when D.x.3 is encountered 0011 is used, and
+if it is negative 1100 is used. This is accurately reflected in the charts below, but is worth making additional
+mention of as these are the only two sub-blocks with equal numbers of 1s and 0s that each have two possible encodings.
+
+
+--------------------------------------------------------
 8b/10b Implementation:
 --------------------------------------------------------
 
 There are 2 implementation defined in the table
+
+
+
 
 */
 
@@ -60,7 +79,7 @@ module enc_8b_10b #(
     output logic        k_err       // invalid control character requested
 );
 
-    // Look up table for code that has different encoding for different RD.
+    // Look up table for code that has different encoding for different input RD.
     // For each index, if the value is one then that code has different encoding.
     localparam X_RD_LUT = 32'b11101001100000011000000110010111;
     localparam Y_RD_LUT = 8'b10011001;
@@ -71,28 +90,22 @@ module enc_8b_10b #(
         logic [4:0] x;                      // x portion of the 8 bit input data
         logic [2:0] y;                      // y portion of the 8 bit input data
 
-        logic [5:0] dx_enc_rd_minus;        // x portion of the encoded data for RD = -1
-        logic [3:0] dy_enc_rd_minus;        // y portion of the encoded data for RD = -1
-        logic [3:0] dy_enc_rd_minus_final;  // y portion of the encoded data for RD = -1
+        logic [5:0] dx_enc_negative;        // x portion of the encoded data for RD = -1
+        logic [3:0] dy_enc_negative_int;        // y portion of the encoded data for RD = -1
+        logic [3:0] dy_enc_negative;  // y portion of the encoded data for RD = -1
         logic       use_a7;                 // Use D.x.A7
         logic [5:0] dx_enc;                 // x portion of the encoded data
         logic [3:0] dy_enc;                 // y portion of the encoded data
 
-        logic       x_select_positive_rd;
-        logic       y_select_positive_rd;
-
-        logic [2:0] num_ones_x;
-        logic       rdisp_x_equal;
-
-        logic       rdisp_after_x;          // running disparity after encoding x.
-        logic       rdisp_after_y;          // running disparity after encoding both x and y.
+        logic       rd_after_x;             // running disparity after encoding x.
+        logic       rd_after_y;             // running disparity after encoding both x and y.
 
         logic [5:0] kx_enc_rd_minus;        // x portion of the encoded control characters for RD = -1
         logic [3:0] ky_enc_rd_minus;        // y portion of the encoded control characters for RD = -1
 
         logic [5:0] kx_enc;     // x portion of the encoded control characters
         logic [3:0] ky_enc;     // y portion of the encoded control characters
-        logic       kerr;
+        logic       kcorrect;
 
         logic [9:0] enc_10b;
 
@@ -103,72 +116,67 @@ module enc_8b_10b #(
         // Data encoding for X portion
         /////////////////////////////////
 
-        // This table here is for RD = −1
-        // Notice that encoding for RD = +1 is the inversion of encoding for RD = -1
-        // the final result are inverted if the actual RD is +1
+        // The following table encodes the abcdei when input RD = -1
         always @* begin
             case(x)
-                5'd0 : dx_enc_rd_minus = 6'b100111;
-                5'd1 : dx_enc_rd_minus = 6'b011101;
-                5'd2 : dx_enc_rd_minus = 6'b101101;
-                5'd3 : dx_enc_rd_minus = 6'b110001;
-                5'd4 : dx_enc_rd_minus = 6'b110101;
-                5'd5 : dx_enc_rd_minus = 6'b101001;
-                5'd6 : dx_enc_rd_minus = 6'b011001;
-                5'd7 : dx_enc_rd_minus = 6'b111000;
-                5'd8 : dx_enc_rd_minus = 6'b111001;
-                5'd9 : dx_enc_rd_minus = 6'b100101;
-                5'd10: dx_enc_rd_minus = 6'b010101;
-                5'd11: dx_enc_rd_minus = 6'b110100;
-                5'd12: dx_enc_rd_minus = 6'b001101;
-                5'd13: dx_enc_rd_minus = 6'b101100;
-                5'd14: dx_enc_rd_minus = 6'b011100;
-                5'd15: dx_enc_rd_minus = 6'b010111;
-                5'd16: dx_enc_rd_minus = 6'b011011;
-                5'd17: dx_enc_rd_minus = 6'b100011;
-                5'd18: dx_enc_rd_minus = 6'b010011;
-                5'd19: dx_enc_rd_minus = 6'b110010;
-                5'd20: dx_enc_rd_minus = 6'b001011;
-                5'd21: dx_enc_rd_minus = 6'b101010;
-                5'd22: dx_enc_rd_minus = 6'b011010;
-                5'd23: dx_enc_rd_minus = 6'b111010;
-                5'd24: dx_enc_rd_minus = 6'b110011;
-                5'd25: dx_enc_rd_minus = 6'b100110;
-                5'd26: dx_enc_rd_minus = 6'b010110;
-                5'd27: dx_enc_rd_minus = 6'b110110;
-                5'd28: dx_enc_rd_minus = 6'b001110;
-                5'd29: dx_enc_rd_minus = 6'b101110;
-                5'd30: dx_enc_rd_minus = 6'b011110;
-                5'd31: dx_enc_rd_minus = 6'b101011;
+                5'd0 : dx_enc_negative = 6'b100111;
+                5'd1 : dx_enc_negative = 6'b011101;
+                5'd2 : dx_enc_negative = 6'b101101;
+                5'd3 : dx_enc_negative = 6'b110001;
+                5'd4 : dx_enc_negative = 6'b110101;
+                5'd5 : dx_enc_negative = 6'b101001;
+                5'd6 : dx_enc_negative = 6'b011001;
+                5'd7 : dx_enc_negative = 6'b111000;
+                5'd8 : dx_enc_negative = 6'b111001;
+                5'd9 : dx_enc_negative = 6'b100101;
+                5'd10: dx_enc_negative = 6'b010101;
+                5'd11: dx_enc_negative = 6'b110100;
+                5'd12: dx_enc_negative = 6'b001101;
+                5'd13: dx_enc_negative = 6'b101100;
+                5'd14: dx_enc_negative = 6'b011100;
+                5'd15: dx_enc_negative = 6'b010111;
+                5'd16: dx_enc_negative = 6'b011011;
+                5'd17: dx_enc_negative = 6'b100011;
+                5'd18: dx_enc_negative = 6'b010011;
+                5'd19: dx_enc_negative = 6'b110010;
+                5'd20: dx_enc_negative = 6'b001011;
+                5'd21: dx_enc_negative = 6'b101010;
+                5'd22: dx_enc_negative = 6'b011010;
+                5'd23: dx_enc_negative = 6'b111010;
+                5'd24: dx_enc_negative = 6'b110011;
+                5'd25: dx_enc_negative = 6'b100110;
+                5'd26: dx_enc_negative = 6'b010110;
+                5'd27: dx_enc_negative = 6'b110110;
+                5'd28: dx_enc_negative = 6'b001110;
+                5'd29: dx_enc_negative = 6'b101110;
+                5'd30: dx_enc_negative = 6'b011110;
+                5'd31: dx_enc_negative = 6'b101011;
             endcase
         end
 
-        assign x_select_positive_rd = X_RD_LUT[x] & rdispin;
-        assign dx_enc = x_select_positive_rd ? ~dx_enc_rd_minus : dx_enc_rd_minus;
+        // If input RD = +1, then we need to invert the value we get from the above table
+        // for those entries that have diferent incoding for different input RD
+        assign dx_enc = (X_RD_LUT[x] && rdispin) ? ~dx_enc_negative : dx_enc_negative;
 
-        // From the table we can find that if D.X code has only 1 encoding, then the running dispairty for X is netural.
-        // If there are 2 encodings, then the running dispairty for X is either netural or positive.
-        assign num_ones_x = dx_enc[0] + dx_enc[1] + dx_enc[2] + dx_enc[3] + dx_enc[4] + dx_enc[5];
-        assign rdisp_x_equal = (num_ones_x == 3);
-        assign rdisp_after_x = (X_RD_LUT[x] && !rdisp_x_equal) ? ~rdispin : rdispin;
+        // Calculate the RD after encoding X portion. This will be used as the input RD for y encoding.
+        // For D.07, RD is not changed after encoding. Otherwise, RD is inverted for the values with LUT[x] = 1
+        assign rd_after_x = (X_RD_LUT[x] && (x != 7)) ? ~rdispin : rdispin;
 
         /////////////////////////////////
         // Data encoding for Y portion
         /////////////////////////////////
 
-        // This table here is for RD = −1
-        // Notice that encoding for RD = +1 is the inversion of encoding for RD = -1
-        // the final result are inverted if the actual RD is +1
+        // The following table encodes the abcdei when input RD = -1 (after encoding X portion)
         always @* begin
             case(y)
-                3'd0: dy_enc_rd_minus = 4'b0100;
-                3'd1: dy_enc_rd_minus = 4'b1001;
-                3'd2: dy_enc_rd_minus = 4'b0101;
-                3'd3: dy_enc_rd_minus = 4'b1100;
-                3'd4: dy_enc_rd_minus = 4'b1101;
-                3'd5: dy_enc_rd_minus = 4'b1010;
-                3'd6: dy_enc_rd_minus = 4'b0110;
-                3'd7: dy_enc_rd_minus = 4'b1110;    // note: This is D.x.P7, special cases need for D.x.A7
+                3'd0: dy_enc_negative_int = 4'b1011;
+                3'd1: dy_enc_negative_int = 4'b1001;
+                3'd2: dy_enc_negative_int = 4'b0101;
+                3'd3: dy_enc_negative_int = 4'b1100;
+                3'd4: dy_enc_negative_int = 4'b1101;
+                3'd5: dy_enc_negative_int = 4'b1010;
+                3'd6: dy_enc_negative_int = 4'b0110;
+                3'd7: dy_enc_negative_int = 4'b1110;    // note: This is D.x.P7, special cases need for D.x.A7
             endcase
         end
 
@@ -176,31 +184,18 @@ module enc_8b_10b #(
         // 1. when RD = −1: for x = 17, 18 and 20 and
         // 2. when RD = +1: for x = 11, 13 and 14.
         assign use_a7 = (y == 3'd7) & (
-                            (~rdispin & ((x == 5'd17) | (x == 5'd18) | (x == 5'd20))) &
+                            (~rdispin & ((x == 5'd17) | (x == 5'd18) | (x == 5'd20))) |
                             ( rdispin & ((x == 5'd11) | (x == 5'd13) | (x == 5'd14)))
                         );
-        assign dy_enc_rd_minus_final = use_a7 ? 4'b0111 : dy_enc_rd_minus;
+        assign dy_enc_negative = use_a7 ? 4'b0111 : dy_enc_negative_int;
 
+        // If after encoding X, RD = +1, then we need to invert the value we get from the above table
+        // for those entries that have diferent incoding for different input RD
+        assign dy_enc = (Y_RD_LUT[y] && rd_after_x) ? ~dy_enc_negative : dy_enc_negative;
 
-        // If the Y encoding has 2 values, then we need to chose the value based on the running disparity after
-        // encoding x, so that the running disparity is within -1 and +1
-
-        // Example 1: input RD = -1, input data is 3. We need to encode D.03.0
-        // Encoding for D.03 is 110011 which doesn't change the running disparity as there are equals number of 0s and 1s.
-        // Now for D.x.0 we need to select 1011 instead of 0100 because if we select 0100 then the new RD = +1.
-        // But if we choose 0100 then the new RD = -3 which is wrong.
-
-        // Example 2: input RD = -1, input data is 0. We need to encode D.00.0
-        // Encoding for D.00 is 100111 which changes the RD from -1 to +1
-        // Now for D.x.0 we need to select 0100 instead of 1011 to make new RD = -1
-        // But if we select 1011 then the new RD will be +3
-
-        // So the conclusion is that if after encoding X, RD is changed to -1, then we should select data with RD = +1
-        // else if after encoding X, RD is changed to +1, then we should select data with RD = -1
-        assign y_select_positive_rd = Y_RD_LUT[y] & ~rdisp_after_x;
-        assign dy_enc = y_select_positive_rd ? ~dy_enc_rd_minus_final : dy_enc_rd_minus_final;
-
-        assign rdisp_after_y = Y_RD_LUT[y] ? ~rdisp_after_x : rdisp_after_x;
+        // Calculate the RD after encoding Y portion. This will be used as the output RD.
+        // For D.x.3, RD is not changed after encoding. Otherwise, RD is inverted for the values with LUT[x] = 1
+        assign rd_after_y = (Y_RD_LUT[y] && (y != 3)) ? ~rd_after_x : rd_after_x;
 
         /////////////////////////////////
         // Control encoding
@@ -210,7 +205,10 @@ module enc_8b_10b #(
         // (no more than six 1s or 0s) but do not have a corresponding 8b data byte.
         // The control symbols have the following patterns K.28.y or K.x.7
 
-        assign kerr = kin & ((x != 5'd28) | (y != 3'd7));
+        assign kcorrect = kin & (
+                                    (x == 5'd28) |
+                                    ((y == 3'd7) & ((x != 6'd23) | (x != 6'd27) | (x != 6'd29) | (x != 6'd30)))
+                                );
 
         always @(*) begin
             case(x)
@@ -219,7 +217,7 @@ module enc_8b_10b #(
                 5'd28: kx_enc_rd_minus = 6'b001111;
                 5'd29: kx_enc_rd_minus = 6'b101110;
                 5'd30: kx_enc_rd_minus = 6'b011110;
-                default: kx_enc_rd_minus = {1'b0, x};
+                default: kx_enc_rd_minus = 6'b0;
             endcase
 
             case(y)
@@ -238,15 +236,11 @@ module enc_8b_10b #(
         assign ky_enc = rdispin ? ~ky_enc_rd_minus : ky_enc_rd_minus;
 
         /////////////////////////////////
-        // calculate running disparity
-        /////////////////////////////////
-
-        assign enc_10b = kin ? {kx_enc, ky_enc} : {dx_enc, dy_enc};
-        assign rdisp = rdisp_after_y;
-
-        /////////////////////////////////
         // Final output
         /////////////////////////////////
+
+        assign enc_10b = (kin && kcorrect) ? {kx_enc, ky_enc} : {dx_enc, dy_enc};
+
         if (OUT_FLOP) begin: out_flop
 
             always @(posedge clk or negedge rst_b) begin
@@ -257,8 +251,8 @@ module enc_8b_10b #(
                 end
                 else begin
                     dataout_10b <= enc_10b;
-                    rdispout <= rdisp;
-                    k_err <= kerr;
+                    rdispout <= rd_after_y;
+                    k_err <= ~kcorrect;
                 end
             end
 
@@ -266,8 +260,8 @@ module enc_8b_10b #(
         else begin: no_out_flop
 
             assign dataout_10b = enc_10b;
-            assign rdispout = rdisp;
-            assign k_err = kerr;
+            assign rdispout = rd_after_y;
+            assign k_err = ~kcorrect;
 
         end: no_out_flop
 

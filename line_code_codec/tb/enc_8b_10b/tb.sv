@@ -21,11 +21,11 @@ module tb();
 
     enc_8b_10b u_enc_8b_10b(.*);
 
-    `ifdef COCOTB_SIM
-        initial begin
-            $dumpfile("dump.vcd");
-            $dumpvars(0, tb);
-        end
-    `endif
+    //`ifdef COCOTB_SIM
+    //    initial begin
+    //        $dumpfile("dump.vcd");
+    //        $dumpvars(0, tb);
+    //    end
+    //`endif
 
 endmodule
