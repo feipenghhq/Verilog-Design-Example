@@ -12,7 +12,7 @@ These 2 videos give a general introduction of ECC and hamming code:
 
 
 
->  This session is taken from wikipedia: <https://en.wikipedia.org/wiki/Hamming_code>
+>  From wikipedia: <https://en.wikipedia.org/wiki/Hamming_code>
 
 Hamming codes can detect **one-bit** and **two-bit** errors, or correct **one-bit** errors without detection of uncorrected errors.
 
@@ -20,7 +20,9 @@ In mathematical terms, Hamming codes are a class of binary linear code. For each
 
 For example, in the (7, 4) Hamming Code, r = 3, so the length of the codeword is 2^3 - 1 = 7, the number of data bit is 4 and the number of parity bits is 3.
 
-## General algorithm
+### General algorithm
+
+> From wikipedia: https://en.wikipedia.org/wiki/Hamming_code#General_algorithm
 
 The following general algorithm generates a single-error correcting  (SEC) code for any number of bits. The main idea is to choose the  error-correcting bits such that the index-XOR (the [XOR](https://en.wikipedia.org/wiki/Exclusive_or) of all the bit positions containing a 1) is 0. 
 
@@ -41,9 +43,13 @@ An algorithm can be deduced from the following description:
 
 The choice of the parity, even or odd, is irrelevant but the same choice must be used for both encoding and decoding.
 
-![image-20230308202458512](assets/image-20230308202458512.png)
+![image-20230308202458512](doc/assets/image-20230308202458512.png)
 
-## Hamming codes with additional parity (SECDED)
+(Image from wikipedia: https://en.wikipedia.org/wiki/Hamming_code)
+
+### Hamming codes with additional parity (SECDED)
+
+> From wikipedia: https://en.wikipedia.org/wiki/Hamming_code#Hamming_codes_with_additional_parity_(SECDED)
 
 Hamming codes have a minimum distance of 3, which means that the decoder can detect and correct a single error, but it cannot distinguish a  double bit error of some codeword from a single bit error of a different codeword.  Thus, some double-bit errors will be incorrectly decoded as  if they were single bit errors and therefore go undetected, unless no  correction is attempted.
 
@@ -51,7 +57,7 @@ To remedy this shortcoming, Hamming codes can be extended by an extra  parity bi
 
 The additional parity bit is the parity of the codeword.
 
-## Decoding Hamming Code
+### Decoding Hamming Code
 
 The decoder calculate the syndrome of the received hamming code. The calculation is very similar to calculating the parity bit, for each syndrome bit, we xor the same data bit position mentioned in step 5 in [General algorithm], and we also xor the parity bit itself. **Note**: We assume the bit start at bit 1 for syndrome, parity and data:
 
@@ -73,7 +79,14 @@ If we use SECDED, then the parity bit together tells us which case is value.
 1. syndrome != 0 and parity != received parity, then 1 bit get flipped and syndrome represent the bit
 2. syndrome != 0 and parity == received parity, then 2 bit get flipped.
 
+## Design
 
+| Files                         | Description                   |
+| ----------------------------- | ----------------------------- |
+| rtl/ecc_hamming_74_encoder.sv | (7,4) Hamming ECC encoder     |
+| rtl/ecc_hamming_74_decoder.sv | (7,4) Hamming ECC decoder     |
+| rtl/ecc_hamming_encoder.sv    | A generic Hamming ECC encoder |
+| rtl/ecc_hamming_decoder.sv    | A genetic Hamming ECC decoder |
 
 
 

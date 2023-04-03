@@ -6,11 +6,9 @@
 
 There are two types of LFSR circuits: Fibonacci LFSR and Galois LFSR.
 
-
-
 ### Polynomials Specification
 
-<https://en.wikipedia.org/wiki/Cyclic_redundancy_check#Specification>
+> From: <https://en.wikipedia.org/wiki/Cyclic_redundancy_check#Specification>
 
 There are three common ways to express a polynomial as an integer: the  first two, which are mirror images in binary, are the constants found in code; the third is the number found in Koopman's papers.  *In each case, one term is omitted.* So the polynomial                            x<sup>4</sup> + x + 1 may be transcribed as:
 
@@ -26,11 +24,9 @@ In the table below they are shown as:
 
 In our design, we will use the **normal** representation.
 
+### Fibonacci LFSR
 
-
-## Fibonacci LFSR
-
-<https://en.wikipedia.org/wiki/Linear-feedback_shift_register#Fibonacci_LFSRs>
+> From: <https://en.wikipedia.org/wiki/Linear-feedback_shift_register#Fibonacci_LFSRs>
 
 The bit positions that affect the next state are called the taps. In the diagram the taps are [16,14,13,11]. The rightmost bit of the LFSR is called the output bit. The taps are XOR'd sequentially with the output bit and then fed back into the leftmost bit. The sequence of bits in the rightmost position is called the output stream.
 
@@ -53,11 +49,9 @@ The arrangement of taps for feedback in an LFSR can be expressed in [finite fiel
 
 The "one" in the polynomial does not correspond to a tap – it corresponds to the input to the first bit (i.e. *x*0, which is equivalent to 1). The powers of the terms represent the tapped bits, counting from the left. The first and last bits are always  connected as an input and output tap respectively.
 
+### Galois LFSR
 
-
-## Galois LFSR
-
-<https://en.wikipedia.org/wiki/Linear-feedback_shift_register#Galois_LFSRs>
+> From: <https://en.wikipedia.org/wiki/Linear-feedback_shift_register#Galois_LFSRs>
 
 ```txt
                                             shift direction
@@ -69,8 +63,8 @@ The "one" in the polynomial does not correspond to a tap – it corresponds to t
        |               |          |              |                                             |
        |               |          |              |                                             |
        <---------------<----------<--------------<---------------------------------------------+
-      
-      
+
+
 ```
 
 In the Galois configuration, when the system is clocked, bits that are  not taps are shifted one position to the right unchanged. The taps, on  the other hand, are XOR-ed with the output bit before they are stored in  the next position.
@@ -79,7 +73,16 @@ The new output bit is the next input bit. The effect of this is that  when the o
 
 To generate the same output stream, the order of the taps is the *counterpart* (see above) of the order for the conventional LFSR, otherwise the  stream will be in reverse. Note that the internal state of the LFSR is  not necessarily the same.
 
+## Design
 
+In this repository , I designed 3 LFSR RTL files and a python script to generate parallel using XOR structure.
+
+| File                    | Description                                                          |
+| ----------------------- | -------------------------------------------------------------------- |
+| rtl/lfsr_fib_s.sv       | Serial Fibonacci LFSR                                                |
+| rtl/lfsr_galois_s.sv    | Serial galois LFSR                                                   |
+| rtl/lfsr_galois_p.sv    | Parallel galois LFSR                                                 |
+| scripts/ParallelLFSR.py | A python script to generate parallel galois LFSR using XOR structure |
 
 ## Reference
 

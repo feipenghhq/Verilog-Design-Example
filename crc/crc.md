@@ -4,11 +4,11 @@
 
 ## Introduction
 
-Read wikipedia for more details regarding CRC
-
-<https://en.wikipedia.org/wiki/Cyclic_redundancy_check>
+Read wikipedia for more details regarding CRC: <https://en.wikipedia.org/wiki/Cyclic_redundancy_check>
 
 ### Polynomials Specification
+
+> From wikipedia: <https://en.wikipedia.org/wiki/Cyclic_redundancy_check#Specification>
 
 there are three common ways to express a polynomial as an integer: the  first two, which are mirror images in binary, are the constants found in code; the third is the number found in Koopman's papers.  *In each case, one term is omitted.* So the polynomial                            x<sup>4</sup> + x + 1 may be transcribed as:
 
@@ -99,6 +99,13 @@ Or we can recalculate the CRC based on the received data and compare that if the
 ## Parallel CRC Calculation
 
 For parallel CRC calculation, we "unroll" the xor calculation N times to get the final result in the same cycle.
+
+## Design
+
+| Files            | Description                       |
+| ---------------- | --------------------------------- |
+| rtl/crc_gen_s.sv | CRC generator using serial LFSR   |
+| rtl/crc_gen_p.sv | CRC generator using parallel LFSR |
 
 ## Other useful reference
 

@@ -22,7 +22,7 @@ module tb();
 
     logic [7:0]     descm_dout;
 
-    scrambler_8bit u_scrambler(
+    scrambler_pcie u_scrambler(
         .clk(clk),
         .rst_b(rst_b),
         .din(din),
@@ -32,7 +32,7 @@ module tb();
         .dis_scrambler_out(scm_dis_scrambler_out),
         .dout(scm_dout));
 
-    scrambler_8bit u_descrambler(
+    scrambler_pcie u_descrambler(
         .clk(clk),
         .rst_b(rst_b),
         .din(scm_dout),

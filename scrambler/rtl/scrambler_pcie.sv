@@ -4,10 +4,10 @@
 // Author: Heqing Huang
 // Date Created: 03/03/2023
 // ------------------------------------------------------------------------------------------------
-// An example 8 bit scrambler
+// PCIe Scrambler
 // ------------------------------------------------------------------------------------------------
-// Example taken from the book <Advanced Chip Design Practical Examples in Verilog>
-// Chapter 6.2.7 PCIe Scrambler
+// This design is based on the example in book <Advanced Chip Design Practical Examples in Verilog>
+// Scrambler defined in PCIe Specification 3.0 Chapter 6.2.7
 //
 // Features:
 //      - 8 bit scrambler, the data input and output are 8 bit wide
@@ -21,7 +21,7 @@
 //      - dis_scramble will disable scrambling the data but the LFSR is still advanced
 // ------------------------------------------------------------------------------------------------
 
-module scrambler_8bit #(
+module scrambler_pcie #(
     parameter SEED = 16'hFFFF,
     parameter COM = 8'hBC,
     parameter SKIP = 8'h1C
